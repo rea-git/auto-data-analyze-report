@@ -15,7 +15,6 @@ def index():
         data = pd.read_csv(request.files['data'])
         missing_method = request.form.get('missing_method')
         outlier_method = request.form.get('outlier_method')
-        before_descrip = data.describe()
         #cleaning
         def encoding(data):
             encoder_mapping = {}
@@ -23,7 +22,6 @@ def index():
                 encoder = LabelEncoder()
                 data[col] = encoder.fit_transform(data[col])
                 encoder_mapping[col] = dict(zip(encoder.classes_, encoder.transform(encoder.classes_)))
-            data = data.apply(pd.to_numeric,errors='coerce')
             return data, encoder_mapping
         def missing_value(data,method):
             if method == 'mean':
@@ -43,46 +41,26 @@ def index():
                 for col in data.select_dtypes(include=['number']).columns:
                     data[col] =winsorize(data[col], limits=[0.05, 0.05])
             return data
-        new_data,encoder_mapping = encoding(data)
+        new_data = data.copy()
+        for col in new_data.columns:
+            if pd.to_numeric(new_data[col], errors='coerce').notna().sum() == len(new_data[col]):
+                new_data[col] = pd.to_numeric(new_data[col])
+        new_data,encoder_mapping = encoding(new_data)
         new_data = missing_value(new_data,missing_method)
         new_data = outlier(new_data,outlier_method)
-        after_descrip = new_data.describe()
-        diff_descrip = before_descrip-after_descrip
+        data_descrip = new_data.describe()
+        new_data_descrip = data.describe()
+        change_data_descrip = change_data.describe()
+        # Table headers
+        html_output = "<table border='1'><tr><th>Column</th><th>Category</th><th>Encoded</th></tr>"
+        
+        # Loop through columns and their mappings
+        for col, mapping in encoder_mapping.items():
+            for category, code in mapping.items():
+                html_output += f"<tr><td>{col}</td><td>{category}</td><td>{code}</td></tr>"
+        
+        html_output += "</table>"
 
-        bef_html = before_descrip.to_html(classes="table table-bordered", border=1)
-        aft_html = after_descrip.to_html(classes="table table-bordered", border=1)
-        diff_html = diff_descrip.to_html(classes="table table-bordered", border=1)
-        """
-        {'index': {'count': 5.0, 'mean': 6.4, 'std': 3.5777087639996634, 'min': 1.0, '25%': 5.0, '50%': 7.0, '75%': 9.0, 'max': 10.0}, 
-        'col1': {'count': 5.0, 'mean': 3.4, 'std': 2.8809720581775866, 'min': 1.0, '25%': 1.0, '50%': 3.0, '75%': 4.0, 'max': 8.0}, 
-        'col2': {'count': 5.0, 'mean': 4.0, 'std': 1.5811388300841898, 'min': 2.0, '25%': 3.0, '50%': 4.0, '75%': 5.0, 'max': 6.0}, 
-        'col3': {'count': 5.0, 'mean': 4.2, 'std': 1.9235384061671346, 'min': 2.0, '25%': 3.0, '50%': 4.0, '75%': 5.0, 'max': 7.0}}
-        """
-        old_data_raw = before_descrip.to_dict()
-        new_data_raw = after_descrip.to_dict()
-        def make_graph(old_data_raw,new_data_raw):
-            
-            old_data={}
-            new_data={}
-            for i in old_data_raw:
-                old_data[i]=old_data_raw[i].values()
-                new_data[i]=new_data_raw[i].values()
-            categories = old_data_raw[i].keys()
-            print(old_data)
-            print(new_data)
-            for i in old_data:
-                plt.figure(figsize=(3.5,2.5))
-                x=np.arange(len(categories))
-                plt.plot(old_data[i],label ='before',color='red' )
-                plt.plot(new_data[i],label ='after',color='blue' ) 
-                plt.xticks(x,categories)
-                #plt.xlabel(xlabel)
-                #plt.ylabel(ylabel)
-                title = i  
-                plt.title(title)
-                plt.legend()
-                plt.savefig(f'static/images/{title}.png', dpi=120)
-                plt.clf()
-        make_graph(old_data_raw,new_data_raw)
-        return render_template('output.html',bef_html = bef_html, aft_html = aft_html,diff_html=diff_html,disc=old_data_raw.keys())
+    return render_template('output.html',encoding_mapping = html_output,missing_method = missing_method,outlier_method = outlier_method,bef_html = data_descrip.to_html(), aft_html = new_data_descrip.to_html())
+
 app.run(debug=True)

@@ -19,21 +19,11 @@
     {% if aft_html %}
     {{aft_html|safe}}
     {% endif %}
-   
-    <h2>Difference in value of raw and cleaned data</h2>
-    {% if diff_html %}
-    {{diff_html|safe}}
+
+    <h2>encoder</h2>
+    {% if encoding_mapping %}
+    {{encoding_mapping|safe}}
     {% endif %}
     </div>
-
-<div class="graphs-grid">
-    <h1>Graphical comparison</h1>
-    {% for i in disc %}
-    <div class="graph-card">
-        <img src="/static/images/{{i}}.png" alt="{{i}}">
-    </div>
-    {% endfor %}
-</div>
-
 </body>
 </html>
