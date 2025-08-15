@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+</head>
+<body>
+    <form method="POST" enctype="multipart/form-data" action="/">
+        <input type="file" name="data" accept=".csv">
+        <label for="missing-method">Slelect method for Missing values</label>
+        <select name="missing_method" id="missing-method">
+            <option value="mean">mean</option>
+            <option value="median">median</option>
+            <option value="mode">mode</option>
+            <option value="KNN">KNN</option>
+            <option value="remove">remove data</option>
+        </select>
+        <label for="outlier-method">Select method for outlier</label>
+        <select name="outlier_method" id="outlier-method">
+            <option value="winsorize">Winzorize</option>
+        </select>
+        <input type="submit" value="Upload CSV">
+    </form>
+
+
+<br>
+</body>
+</html>

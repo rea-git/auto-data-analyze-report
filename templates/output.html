@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/output.css') }}">
+    <title>output</title>
+</head>
+<body>
+    <a href="/">Home</a>
+<h1>Statistical Description data</h1>
+    <div class ='tables-row'>
+    <h2>Raw data description</h2>
+    {% if bef_html %}
+    {{bef_html|safe}}
+    {% endif %}
+
+    <h2>cleaned data description</h2>
+    {% if aft_html %}
+    {{aft_html|safe}}
+    {% endif %}
+   
+    <h2>Difference in value of raw and cleaned data</h2>
+    {% if diff_html %}
+    {{diff_html|safe}}
+    {% endif %}
+    </div>
+
+<div class="graphs-grid">
+    <h1>Graphical comparison</h1>
+    {% for i in disc %}
+    <div class="graph-card">
+        <img src="/static/images/{{i}}.png" alt="{{i}}">
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>
