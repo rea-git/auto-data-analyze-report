@@ -2,6 +2,7 @@ from flask import Flask, request, redirect, url_for,render_template
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import LabelEncoder
 from scipy.stats.mstats import winsorize
+import seaborn as sns
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt 
@@ -16,6 +17,17 @@ def index():
         missing_method = request.form.get('missing_method')
         outlier_method = request.form.get('outlier_method')
         #cleaning
+        def to_numeric(data):
+            for col in data.columns:
+                numeric_count = pd.to_numeric(data[col], errors='coerce').notna().sum()
+                total_count = len(data[col])
+
+                # If majority are numbers, convert whole column to numeric
+                if numeric_count / total_count > 0.8:  # threshold can be tuned
+                    # Replace non-numeric (like 'Nil') with 0 before converting
+                    data[col] = pd.to_numeric(data[col], errors='coerce').fillna(np.nan)
+                    # Step 2: Label encode only remaining object columns
+            return data
         def encoding(data):
             encoder_mapping = {}
             for col in data.select_dtypes(include=['object']).columns:
@@ -42,15 +54,12 @@ def index():
                     data[col] =winsorize(data[col], limits=[0.05, 0.05])
             return data
         new_data = data.copy()
-        for col in new_data.columns:
-            if pd.to_numeric(new_data[col], errors='coerce').notna().sum() == len(new_data[col]):
-                new_data[col] = pd.to_numeric(new_data[col])
+        new_data = to_numeric(new_data)
         new_data,encoder_mapping = encoding(new_data)
         new_data = missing_value(new_data,missing_method)
         new_data = outlier(new_data,outlier_method)
-        data_descrip = new_data.describe()
-        new_data_descrip = data.describe()
-        change_data_descrip = change_data.describe()
+        data_descrip = data.describe()
+        new_data_descrip = new_data.describe()
         # Table headers
         html_output = "<table border='1'><tr><th>Column</th><th>Category</th><th>Encoded</th></tr>"
         
@@ -60,7 +69,13 @@ def index():
                 html_output += f"<tr><td>{col}</td><td>{category}</td><td>{code}</td></tr>"
         
         html_output += "</table>"
+        numeric_data = new_data.select_dtypes(include=['number'])
+        corr = numeric_data.corr()
 
+        plt.figure(figsize=(10,8))
+        plt.tight_layout() 
+        sns.heatmap(corr, annot=True, cmap='coolwarm')
+        plt.savefig('static/images/corr.png',bbox_inches='tight')
+        plt.close()
     return render_template('output.html',encoding_mapping = html_output,missing_method = missing_method,outlier_method = outlier_method,bef_html = data_descrip.to_html(), aft_html = new_data_descrip.to_html())
-
 app.run(debug=True)
