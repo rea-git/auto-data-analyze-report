@@ -43,8 +43,11 @@ def index():
             if method == 'mode':
                 data = data.fillna(data.mode().iloc[0])
             if method == 'KNN':
+                numeric_cols = data.select_dtypes(include=['number']).columns
                 imputer = KNNImputer(n_neighbors=2)
-                data = pd.DataFrame(imputer.fit_transform(data),columns=data.columns)
+                imputed_array = imputer.fit_transform(data[numeric_cols])
+                imputed_df = pd.DataFrame(imputed_array, columns=numeric_cols, index=data.index)
+                data[numeric_cols] = imputed_df  # assign back safely
             if method == 'remove':
                 data = data.dropna() # remove empty 
             return data
@@ -56,6 +59,10 @@ def index():
         new_data = data.copy()
         new_data = to_numeric(new_data)
         new_data,encoder_mapping = encoding(new_data)
+
+        new_data = new_data.dropna(axis=1, how='all')
+        new_data = new_data.loc[:, ~new_data.columns.str.contains('^Unnamed')]
+
         new_data = missing_value(new_data,missing_method)
         new_data = outlier(new_data,outlier_method)
         data_descrip = data.describe()
@@ -67,15 +74,27 @@ def index():
         for col, mapping in encoder_mapping.items():
             for category, code in mapping.items():
                 html_output += f"<tr><td>{col}</td><td>{category}</td><td>{code}</td></tr>"
-        
+        #margin of error
+        z_scores = {
+            '90%':1.645,
+            '95%':1.96,
+            '99%':2.575
+        }
+        n= new_data_descrip.loc['count']
+        std = new_data_descrip.loc['std']
+        margin_errors = {}
+        for level, z in z_scores.items():
+            margin_errors[level] = z * (std / np.sqrt(n))
+        margin_errors_df = pd.DataFrame(margin_errors)
+
         html_output += "</table>"
         numeric_data = new_data.select_dtypes(include=['number'])
         corr = numeric_data.corr()
 
-        plt.figure(figsize=(10,8))
+        plt.figure(figsize=(20,16))
         plt.tight_layout() 
         sns.heatmap(corr, annot=True, cmap='coolwarm')
-        plt.savefig('static/images/corr.png',bbox_inches='tight')
+        plt.savefig('static/images/corr.png', bbox_inches='tight')
         plt.close()
-    return render_template('output.html',encoding_mapping = html_output,missing_method = missing_method,outlier_method = outlier_method,bef_html = data_descrip.to_html(), aft_html = new_data_descrip.to_html())
+    return render_template('output.html',margin_of_error = margin_errors_df.to_html(), encoding_mapping = html_output,missing_method = missing_method,outlier_method = outlier_method,bef_html = data_descrip.to_html(), aft_html = new_data_descrip.to_html())
 app.run(debug=True)

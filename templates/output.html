@@ -9,8 +9,8 @@
 <body>
     <a href="/">Home</a>
     <h1>methods used:</h1>
-    <h3>Outlier method</h3> <p>{{outlier_method}}</p>
-    <h3>missing value method</h3> <p>{{missing_method}}</p>
+    <h2>Outlier method</h2> <h3>{{outlier_method}}</h3>
+    <h2>missing value method</h2> <h3>{{missing_method}}</h3>
 <h1>Statistical Description data</h1>
     <div class ='tables-row'>
     <h2>Raw data description</h2>
@@ -23,13 +23,18 @@
     {{aft_html|safe}}
     {% endif %}
 
+    <h2>margin of error</h2>
+    {% if margin_of_error %}
+    {{margin_of_error|safe}}
+    {% endif %}
+
     <h2>encoder mapping</h2>
     {% if encoding_mapping %}
     {{encoding_mapping|safe}}
     {% endif %}
     </div>
     <div>
-        <img src="{{ url_for('static', filename='images/corr.png') }}" alt="Correlation Heatmap">
+        <img src="{{ url_for('static', filename='images/corr.png') }}" alt="Correlation Heatmap" height = '800px' width = '800px'>
     </div>
 </body>
 </html>
